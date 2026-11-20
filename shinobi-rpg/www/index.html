@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Kagenuma: Ashes of the Shinobi</title>
+<meta name="theme-color" content="#000000">
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#game{display:block;position:fixed;left:0;top:0}
+#touch{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none}
+#dpad{position:absolute;left:3vmin;bottom:4vmin;width:36vmin;height:36vmin;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(220,200,150,.22);pointer-events:auto;touch-action:none}
+#dpad .knob{position:absolute;left:34%;top:34%;width:32%;height:32%;border-radius:50%;background:rgba(220,200,150,.25)}
+.btn{position:absolute;width:16vmin;height:16vmin;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(220,200,150,.3);color:rgba(240,225,190,.75);font:bold 5.5vmin Georgia,serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none}
+.btn.on{background:rgba(220,200,150,.35)}
+#btnA{right:4vmin;bottom:15vmin;width:18vmin;height:18vmin}
+#btnB{right:24vmin;bottom:4vmin}
+#btnS{right:24vmin;bottom:23vmin}
+.btn.sm{width:13vmin;height:13vmin;font-size:4.5vmin}
+#btnT{right:6vmin;bottom:36vmin}
+#btnM{right:4vmin;top:4vmin;width:11vmin;height:11vmin;font-size:4.5vmin}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="touch">
+  <div id="dpad"><div class="knob"></div></div>
+  <div class="btn" id="btnA">A</div>
+  <div class="btn" id="btnB">B</div>
+  <div class="btn sm" id="btnS">S</div>
+  <div class="btn sm" id="btnT">T</div>
+  <div class="btn" id="btnM">&#9776;</div>
+</div>
+<script src="js/core.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/data.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/story.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
