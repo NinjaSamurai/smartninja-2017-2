@@ -50,19 +50,11 @@ async function readDoc(id) {
   }
 }
 
-function moveEntity(ent, dir, speed = 4) {
-  const D = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
-  ent.dir = dir;
-  return new Promise(res => { ent.mv = { x: ent.x + D[0], y: ent.y + D[1], t: 0, speed, res }; });
+function moveEntity(n, dir, speed = 3) {
+  const [dx, dy] = DV[dir]; n.dir = dir;
+  return new Promise(res => { n.mv = { x: n.px + dx * 16, y: n.py + dy * 16, speed: speed * 16, res }; });
 }
 async function walkNpc(n, dirs, speed) { for (const d of dirs) await moveEntity(n, d, speed); }
-async function walkPlayer(dirs) {
-  for (const d of dirs) {
-    const D = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[d];
-    G.dir = d; await new Promise(res => { G.mv = { x: G.px + D[0], y: G.py + D[1], t: 0, res, script: true }; });
-  }
-}
-function faceTo(n) { const dx = G.px - n.x, dy = G.py - n.y; n.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); }
 
 /* ---------------- VILLAGE ---------------- */
 Object.assign(MAPS.village, {
@@ -90,8 +82,8 @@ async function lootersScene() {
   await say('Bandit', '...Oi. Someone\'s coming up the road.');
   await say('Ren', 'Step away from my father\'s house.');
   await say('Looter', 'One more ghost from the ashes? Gut him and get back to work!');
-  await say('Tip: Choose "Strike" to attack. Your health (HP) and Ki — the stamina for techniques — are shown at the bottom right.');
-  await battle(['looter', 'looter'], { noFlee: true, intro: 'The looters draw their knives!', noAmbush: true });
+  await say('Tip: Press A (Z / Space) to slash — tap it quickly for a combo. B (X / Shift) dodge-rolls. Watch for enemies flashing red: that is your cue to roll.');
+  await battle(['looter', 'looter'], { replace: ['looter1', 'looter2'], intro: 'The looters draw their knives!' });
   setF('looters');
   await say('Ren', '...Carrion birds. The real killers are long gone.');
   await say('Ren', 'Mother. Father. Yuki. Sota. Is anyone here?');
@@ -119,7 +111,7 @@ async function gonbeiTalk() {
     await say('Gonbei', 'And Ren-sama... beneath the floor of the shrine room, your father kept something for you. The fire may have spared it.');
     setF('gonbei');
     await say('Ren', 'Rest, Gonbei. I will bring Sota home. I swear it on their graves.');
-    await say('Tip: Examine things by facing them and pressing A (Z / Enter). Open the menu with B or ☰ (X / Esc).');
+    await say('Tip: Face people and things and press A to talk or examine. Open the menu with ☰ (Esc / Tab).');
     return;
   }
   const c = await ask('Gonbei', F('blade') ? 'Go, young master. I will tend the graves. Do you need to rest a while first?' : 'The shrine room was at the center of the house. Search there.', ['Rest here', 'Talk', 'Leave']);
@@ -143,10 +135,12 @@ async function homeSearch() {
   if (c === 0) await readDoc('letter');
   await say('Ren', 'Kuroda Gensai. Father\'s own student.');
   await say('Tip: Equip the blade and the beads from the menu — Equipment. They are far better than what you carry.');
+  await say('Tip: Enemies who have not noticed you take double damage — triple from behind. Approach carefully.');
 }
 
 /* ---------------- FOREST ---------------- */
 Object.assign(MAPS.forest, {
+  spawnN: 7, noSpawn: [[15, 1, 13, 6], [5, 5, 9, 7]],
   exits: [
     { x: 0, y: 13, to: 'village', tx: 30, ty: 10, dir: 'left' },
     { x: 39, y: 13, to: 'town', tx: 1, ty: 13, dir: 'right' },
@@ -179,9 +173,10 @@ async function tozoScene() {
   await say('Ren', 'You were there?');
   await say('Tōzō', "Ha! We only picked the bones after the crows had fed. Black-clad devils. They paid us silver to watch the roads, and keep our mouths shut.");
   await say('Tōzō', 'Speaking of mouths. Boys — shut his.');
-  const r1 = await battle(['bandit', 'bandit'], { noFlee: true, intro: "Tōzō's men rush you!" });
+  await battle(['bandit', 'bandit'], { replace: ['tb1', 'tb2'], intro: "Tōzō's men rush you!" });
   await say('Tōzō', 'Useless! Fine. I\'ll do it myself.');
-  await battle(['tozo'], { boss: true, noFlee: true, intro: 'Onibi Tōzō hefts his great nodachi!' });
+  await battle(['tozo'], { boss: true, replace: ['tozo'], intro: 'Onibi Tōzō hefts his great nodachi!' });
+  await say('Tip: Big foes like Tōzō leap at you — a red ring marks where they will land. Roll out of it!');
   await say('Tōzō', 'Wait — wait! The crows... they went north with a covered cart. To Kuroiwa, up past Akame Falls. There was a boy in the cart. That\'s all I know, I swear!');
   await say('Tōzō', '...Should have stayed... a woodcutter...');
   setF('tozo');
@@ -293,6 +288,7 @@ async function priestTalk() {
 
 /* ---------------- PASS ---------------- */
 Object.assign(MAPS.pass, {
+  spawnN: 8, noSpawn: [[15, 11, 12, 9], [5, 3, 10, 5], [3, 22, 8, 5]],
   exits: [
     { x: 17, y: 33, w: 2, to: 'town', tx: 20, ty: 1, dir: 'down' },
     { x: 17, y: 0, w: 2, to: 'fortress', tx: 16, ty: 30, dir: 'up' },
@@ -320,7 +316,7 @@ async function fallsScene() {
   await say('Ren', 'Where is my brother?');
   await say('Crow Assassin', "Your brother? Ask the crows on Kuroiwa's gate. They've been picking at him for days.");
   await say('Ren', '...You will tell me everything before you die.');
-  await battle(['scout', 'assassin'], { boss: true, noFlee: true, bg: 'falls', intro: 'The Yatagarasu close in on the bridge!' });
+  await battle(['assassin', 'scout'], { boss: true, replace: ['as1', 'as2'], intro: 'The Yatagarasu close in on the bridge!' });
   setF('ambush3');
   G.dir = 'down';
   Flash.go('#fff', 0.5);
@@ -347,6 +343,7 @@ async function fallsScene() {
 
 /* ---------------- FORTRESS ---------------- */
 Object.assign(MAPS.fortress, {
+  spawnN: 9, noSpawn: [[1, 1, 32, 7], [0, 22, 34, 10]],
   exits: [
     { x: 15, y: 31, w: 4, to: 'pass', tx: 17, ty: 1, dir: 'down' },
     { x: 16, y: 0, w: 2, to: 'castle', tx: 14, ty: 38, dir: 'up', cond: () => F('hanzaki'),
@@ -390,7 +387,7 @@ async function hanzakiScene() {
   await say('Ren', 'Where is Sota?');
   await say('Hanzaki', 'Gone to Karasu-jō, learning to forget your name. Every day he forgets a little more. Soon he will hunt you himself, and smile while he does it.');
   await say('Ren', 'Then my road goes through you.');
-  await battle(['hanzaki'], { boss: true, noFlee: true, intro: 'Hanzaki, the Iron Crow, raises his great blade!' });
+  await battle(['hanzaki', 'guard', 'guard'], { boss: true, replace: ['hanzaki', 'hg1', 'hg2'], intro: 'Hanzaki, the Iron Crow, raises his great blade!' });
   await say('Hanzaki', 'Heh... you fight... like Isshin...');
   await say('Hanzaki', 'Gensai will... enjoy... breaking you...');
   setF('hanzaki'); setF('ch', 5);
@@ -405,6 +402,7 @@ async function hanzakiScene() {
 
 /* ---------------- CASTLE ---------------- */
 Object.assign(MAPS.castle, {
+  spawnN: 9, noSpawn: [[7, 1, 16, 10], [8, 33, 14, 7]],
   exits: [{ x: 14, y: 39, w: 2, to: 'fortress', tx: 16, ty: 1, dir: 'down' }],
   chests: { '8,28': { item: 'nightsilk', n: 1 }, '5,17': { item: 'tonic', n: 2 }, '24,17': { item: 'karasu_giri', n: 1 } },
   onEnter: async () => { if (!F('castleSeen')) { setF('castleSeen'); await chapter('Chapter V', 'The Crow Castle'); await say('Karasu-jō squats on its crag like a carrion bird — black walls, black tiles, and not a single lantern lit in welcome.'); } },
@@ -445,11 +443,13 @@ async function yukiScene() {
   await say('Yuki', 'Together. A camellia falls whole—');
   await say('Ren', '—never petal by petal.');
   setF('yukiJoined'); y.hidden = true;
+  G.yuki = mkYukiF(y.px, y.py);
   P.skills.push('camellia'); P.hp = maxHP(); P.ki = maxKi();
   Snd.sfx('level');
   toast('Yuki joined you!', '#f09aaa');
-  await say('Yuki joins the fight! She will act on her own in battle, guarding your back.');
-  await say('Ren and Yuki learned Tsubaki-otoshi — the Falling Camellia.');
+  await say('Yuki now travels with you! She fights on her own, throws shuriken, and patches you up when you are badly hurt.');
+  P.active = 'camellia';
+  await say('Ren and Yuki learned Tsubaki-otoshi — the Falling Camellia. It strikes every foe in sight. (Set to your T button.)');
   Music.play('dungeon');
 }
 async function finalScene() {
@@ -462,7 +462,7 @@ async function finalScene() {
   await say('Sota', 'When the fire came, my brother was off on some lord\'s errand. My sister ran. Father sold me to pay his debts. Gensai-sensei is the only one who came for me.');
   await say('Ren', 'That is a lie. Father died at the gate with his sword in his hand. Mother died beside him.');
   await say('Gensai', 'Words. Sota — show your brother what I have taught you.');
-  await battle(['sota'], { boss: true, noFlee: true, music: 'boss', keepMusic: true, intro: 'Sota draws his blade. His eyes are empty.',
+  await battle(['sota'], { boss: true, replace: ['sota'], restore: true, music: 'boss', keepMusic: true, intro: 'Sota draws his blade. His eyes are empty.',
     endWhen: B => B.enemies[0].hp < B.enemies[0].maxhp * 0.5 });
   Music.play('reunion');
   await say('Sota staggers back, breathing hard. You lower your blade.');
@@ -479,7 +479,7 @@ async function finalScene() {
   await say('Gensai', 'No matter. I will simply begin again — with all three of you.');
   await say('Ren', 'Yuki. Get Sota behind you.');
   await say('Yuki', 'Together, niisan.');
-  await battle(['gensai'], { boss: true, noFlee: true, music: 'boss', bg: 'throne', intro: 'Kuroda Gensai, master of the Yatagarasu, draws his black blade!' });
+  await battle(['gensai'], { boss: true, replace: ['gensai'], music: 'boss', intro: 'Kuroda Gensai, master of the Yatagarasu, draws his black blade!' });
   await say('Gensai sinks to one knee. His blade clatters across the floor.');
   await say('Gensai', 'So... the camellia... falls whole...');
   await say('Gensai', 'Isshin... you old fool... You were right... about them...');
@@ -491,6 +491,7 @@ async function finalScene() {
 
 /* ---------------- EPILOGUE ---------------- */
 Object.assign(MAPS.spring, {
+  noFollower: true,
   npcs: [
     { id: 'e_yuki', x: 6, y: 4, spr: 'yuki', dir: 'up' },
     { id: 'e_sota', x: 7, y: 4, spr: 'sota', dir: 'up' },
@@ -536,5 +537,5 @@ async function prologue() {
   await fadeIn(1.2);
   await say('Ren', '...No.');
   await say('Ren', 'No, no, no...');
-  await say('Tip: Move with the arrow keys / WASD or the on-screen pad.');
+  await say('Tip: Move freely in any direction with the arrow keys / WASD, the on-screen stick, or a gamepad.');
 }

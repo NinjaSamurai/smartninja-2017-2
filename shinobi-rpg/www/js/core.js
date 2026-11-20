@@ -33,25 +33,62 @@ function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = 
 function hexRGB(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 function shade(h, amt) { const [r, g, b] = hexRGB(h); const f = v => clamp(Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt), 0, 255); return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join(''); }
 
-/* ----- Input ----- */
+/* ----- Input: keyboard, touch (analog stick), gamepad ----- */
 const Input = {
-  held: {}, pr: {}, hold: {},
+  held: {}, pr: {}, hold: {}, ax: 0, ay: 0, analog: false, pad: {},
   press(a) { if (!this.held[a]) { this.pr[a] = true; this.hold[a] = 0; } this.held[a] = true; Snd.unlock(); },
   release(a) { this.held[a] = false; },
   take(a) { if (this.pr[a]) { this.pr[a] = false; return true; } return false; },
   update(dt) {
+    pollGamepad();
     for (const a of ['up', 'down', 'left', 'right']) {
       if (this.held[a]) { this.hold[a] += dt; if (this.hold[a] > 0.38) { this.hold[a] -= 0.085; this.pr[a] = true; } }
     }
   },
   clear() { this.pr = {}; },
   dir() { for (const d of ['up', 'down', 'left', 'right']) if (this.held[d]) return d; return null; },
+  axis() {
+    if (this.analog) return [this.ax, this.ay];
+    let x = (this.held.right ? 1 : 0) - (this.held.left ? 1 : 0), y = (this.held.down ? 1 : 0) - (this.held.up ? 1 : 0);
+    if (x && y) { x *= Math.SQRT1_2; y *= Math.SQRT1_2; }
+    return [x, y];
+  },
 };
 const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
-  KeyZ: 'ok', Enter: 'ok', Space: 'ok', KeyJ: 'ok', KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel', KeyK: 'cancel', KeyC: 'menu', KeyM: 'menu', Tab: 'menu' };
-window.addEventListener('keydown', e => { const a = KEYS[e.code]; if (a) { e.preventDefault(); if (!e.repeat) Input.press(a); } });
-window.addEventListener('keyup', e => { const a = KEYS[e.code]; if (a) { e.preventDefault(); Input.release(a); } });
-window.addEventListener('blur', () => { Input.held = {}; });
+  KeyZ: 'ok', Enter: 'ok', Space: 'ok', KeyJ: 'ok', KeyX: 'cancel', Backspace: 'cancel', KeyK: 'cancel', ShiftLeft: 'cancel', ShiftRight: 'cancel',
+  KeyC: 'shuriken', KeyL: 'shuriken', KeyV: 'tech', KeyI: 'tech', KeyM: 'menu', Tab: 'menu', KeyP: 'menu' };
+window.addEventListener('keydown', e => {
+  if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) Input.press(typeof UI !== 'undefined' && UI.stack.length ? 'cancel' : 'menu'); return; }
+  const a = KEYS[e.code]; if (a) { e.preventDefault(); if (!e.repeat) Input.press(a); }
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'Escape') { Input.release('cancel'); Input.release('menu'); return; }
+  const a = KEYS[e.code]; if (a) { e.preventDefault(); Input.release(a); }
+});
+window.addEventListener('blur', () => { Input.held = {}; Input.analog = false; Input.ax = Input.ay = 0; });
+
+function pollGamepad() {
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gp = null; for (const g of gps) if (g && g.connected) { gp = g; break; }
+  if (!gp) return;
+  const map = { 0: 'ok', 1: 'cancel', 2: 'shuriken', 3: 'tech', 9: 'menu', 8: 'menu', 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
+  for (const k in map) {
+    const b = gp.buttons[k]; const on = !!(b && b.pressed);
+    const key = 'gp' + k;
+    if (on && !Input.pad[key]) Input.press(map[k]);
+    if (!on && Input.pad[key]) Input.release(map[k]);
+    Input.pad[key] = on;
+  }
+  const x = gp.axes[0] || 0, y = gp.axes[1] || 0, m = Math.hypot(x, y);
+  if (m > 0.22) {
+    Input.analog = true; const s = Math.min(1, m) / m; Input.ax = x * s; Input.ay = y * s; Input.padStick = true;
+    const d = Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up');
+    for (const k of ['up', 'down', 'left', 'right']) { if (k === d && m > 0.5) { if (!Input.pad['s' + k]) Input.press(k); Input.pad['s' + k] = true; } else if (Input.pad['s' + k]) { Input.release(k); Input.pad['s' + k] = false; } }
+  } else if (Input.padStick) {
+    Input.padStick = false; Input.analog = false; Input.ax = Input.ay = 0;
+    for (const k of ['up', 'down', 'left', 'right']) if (Input.pad['s' + k]) { Input.release(k); Input.pad['s' + k] = false; }
+  }
+}
 
 (function setupTouch() {
   const t = document.getElementById('touch');
@@ -63,19 +100,19 @@ window.addEventListener('blur', () => { Input.held = {}; });
   const move = e => {
     const r = dpad.getBoundingClientRect();
     const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
-    const dist = Math.hypot(dx, dy);
-    let d = null;
-    if (dist > r.width * 0.12) d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-    setDir(d);
-    const lim = r.width * 0.3, s = Math.min(dist, lim) / (dist || 1);
+    const rad = r.width * 0.36, dist = Math.hypot(dx, dy);
+    const m = Math.min(1, dist / rad);
+    if (m > 0.18) { Input.analog = true; Input.ax = dx / dist * m; Input.ay = dy / dist * m; } else { Input.ax = Input.ay = 0; Input.analog = true; }
+    setDir(m > 0.45 ? (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')) : null);
+    const s = Math.min(dist, rad) / (dist || 1);
     knob.style.transform = 'translate(' + dx * s + 'px,' + dy * s + 'px)';
   };
   dpad.addEventListener('pointerdown', e => { pid = e.pointerId; try { dpad.setPointerCapture(pid); } catch (_) {} move(e); e.preventDefault(); });
   dpad.addEventListener('pointermove', e => { if (e.pointerId === pid) move(e); });
-  const up = e => { if (e.pointerId === pid) { pid = null; setDir(null); knob.style.transform = ''; } };
+  const up = e => { if (e.pointerId === pid) { pid = null; setDir(null); Input.analog = false; Input.ax = Input.ay = 0; knob.style.transform = ''; } };
   dpad.addEventListener('pointerup', up); dpad.addEventListener('pointercancel', up);
-  for (const [id, a] of [['btnA', 'ok'], ['btnB', 'cancel'], ['btnM', 'menu']]) {
-    const b = document.getElementById(id);
+  for (const [id, a] of [['btnA', 'ok'], ['btnB', 'cancel'], ['btnS', 'shuriken'], ['btnT', 'tech'], ['btnM', 'menu']]) {
+    const b = document.getElementById(id); if (!b) continue;
     b.addEventListener('pointerdown', e => { e.preventDefault(); Input.press(a); b.classList.add('on'); });
     const r = () => { Input.release(a); b.classList.remove('on'); };
     b.addEventListener('pointerup', r); b.addEventListener('pointercancel', r); b.addEventListener('pointerleave', r);
@@ -154,6 +191,13 @@ const Snd = {
       case 'die': this.tone(300, 0.6, { type: 'sawtooth', v: 0.07, slide: 0.2, lp: 1200 }); break;
       case 'coin': this.tone(1320, 0.06, { v: 0.05 }); this.tone(1760, 0.12, { v: 0.05, t: T + 0.06 }); break;
       case 'bell': this.tone(523, 2.2, { type: 'sine', v: 0.2 }); this.tone(1046 * 1.01, 1.4, { type: 'sine', v: 0.06 }); break;
+      case 'swing': this.noise(0.09, { f: 2600, ft: 'bandpass', v: 0.22 }); break;
+      case 'roll': this.noise(0.18, { f: 700, v: 0.15 }); break;
+      case 'alert': this.tone(1200, 0.08, { v: 0.06 }); this.tone(1600, 0.1, { v: 0.06, t: T + 0.07 }); break;
+      case 'pickup': this.tone(1500, 0.05, { type: 'triangle', v: 0.06 }); break;
+      case 'block': this.tone(1800, 0.1, { type: 'square', v: 0.05 }); this.noise(0.08, { f: 5000, ft: 'highpass', v: 0.2 }); break;
+      case 'charge': this.tone(600, 0.25, { type: 'triangle', v: 0.05, slide: 2 }); break;
+      case 'spin': this.noise(0.3, { f: 3000, ft: 'bandpass', v: 0.3 }); this.tone(900, 0.3, { type: 'sawtooth', v: 0.03, slide: 0.5 }); break;
       case 'poison': this.tone(300, 0.2, { type: 'sine', v: 0.08, slide: 0.5 }); break;
     }
   },

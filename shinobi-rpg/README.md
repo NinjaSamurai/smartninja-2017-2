@@ -10,14 +10,20 @@ the "three-legged crow" shinobi led by his father's former student, Kuroda Gensa
 His parents are dead. His little brother Sota was carried off, and rumor says he was executed.
 His sister Yuki is believed to have died in the fire...
 
-Five chapters and an epilogue: the burned village → Iga Forest → Ueno market town → Akame Falls → Kuroiwa fortress → Karasu-jō, the Crow Castle.
+Five chapters and an epilogue, played as a real-time action RPG: the burned village → Iga Forest → Ueno market town → Akame Falls → Kuroiwa fortress → Karasu-jō, the Crow Castle.
 
 ## Features
-- Turn-based battles: matchlock gunners that need a turn to aim, poison, blinding powder, smoke bombs, bosses with phases, and a companion who fights alongside you late in the game.
-- **Character growth:** XP and levels. Each level raises every stat, gives **2 training points** to spend on STR/AGI/END/FOC, and unlocks techniques (Bō-shuriken, Kokyū-hō, Kemuri-dama, Metsubushi, Iai-nuki, Doku-bari, Kasumi-giri, Kage-nui, and one more through the story).
-- Weapons, armor and charms, shops, an inn, treasure chests, a side quest, and saving at Jizō statues.
-- Night lighting, embers, mist, falling leaves and petals. Procedural music in Japanese scales.
-- Controls: arrows/WASD + Z/Enter (A) + X/Esc (B). On phones there is an on-screen pad, and the Back button works as B.
+- **16-bit style graphics:** SNES-sized characters (16×24) with 3-tone shading and outlines, plus full animation sets (walk, sword combos, roll, hurt, death). Terrain is drawn pixel by pixel with blended paths, shorelines, cliff faces, tiled roofs and torch-lit castles. Tall trees overlap the player for depth.
+- **Fluid movement in the style of *A Link to the Past*:** 8-direction movement with pixel-precise collision, corner sliding and a smooth camera.
+- **Real-time action combat:** 3-hit sword combos, a charged spinning slash, dodge-rolls with invincibility frames, shuriken that can also knock enemy projectiles out of the air, and hit-stop on impact.
+- **Readable enemies:** they flash red before striking, gunners show a smoking aim line, and big foes mark where they will land.
+- **Stealth:** enemies have vision cones. Unaware foes take double damage, triple from behind, and smoke bombs make them lose you.
+- **Bosses with attack patterns:** leap slams, spins, shuriken fans, radial dart storms, vanishing strikes, and an enraged phase at half health.
+- **Yuki, the AI companion:** she joins late in the story, fights on her own, throws shuriken and heals you.
+- **Character growth:** XP and levels. Each level raises every stat, gives **2 training points** to spend on STR/AGI/END/FOC, and unlocks techniques (smoke bomb, blinding powder, quick-draw dash, poison needle, mist cut, shadow stitch, and one more through the story).
+- Weapons, armor and charms, shops, an inn, treasure chests, a side quest, Jizō save shrines, and Easy/Normal difficulty.
+- **Controls:** keyboard, touch (analog stick + A/B/S/T buttons) and gamepad.
+  Keyboard: arrows/WASD to move · Z/Space attack/talk · X/Shift roll · C shuriken · V technique · Esc/Tab menu.
 
 ## Building the APK
 On Debian/Ubuntu (no Gradle or Android Studio needed):

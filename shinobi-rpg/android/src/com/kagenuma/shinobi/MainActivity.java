@@ -88,11 +88,11 @@ public class MainActivity extends Activity {
         hideSystemUi();
     }
 
-    /** The hardware Back button acts as the in-game B (cancel/menu) button. */
+    /** The hardware Back button closes menus/dialogs, or opens the pause menu during play. */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            web.evaluateJavascript("try{Input.press('cancel');setTimeout(function(){Input.release('cancel');},60);}catch(e){}", null);
+            web.evaluateJavascript("try{var a=UI.stack.length?'cancel':'menu';Input.press(a);setTimeout(function(){Input.release(a);},60);}catch(e){}", null);
             return true;
         }
         return super.onKeyDown(keyCode, event);

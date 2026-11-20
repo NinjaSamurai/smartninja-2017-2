@@ -183,7 +183,7 @@ function invList(filter) {
 class InfoPanel extends Widget {
   draw() {
     drawWin(12, 8, 210, 72);
-    const s = SPR.ren.down[0]; ctx.drawImage(s, 18, 14, 48, 48);
+    ctx.drawImage(sprFrame('ren', 'idle', 'down', 0), 12, 2, 60, 60);
     text('Kagenuma Ren', 72, 14, { bold: true });
     text('Level ' + P.lv + (P.pts ? '   ◆ ' + P.pts + ' training pts' : ''), 72, 29, { size: 10, color: P.pts ? '#f0d070' : '#c8bc98' });
     text('HP', 72, 45, { size: 9, color: '#c8bc98' }); bar(88, 47, 80, 5, P.hp, maxHP(), '#c84a3a'); text(P.hp + '/' + maxHP(), 172, 43, { size: 9 });
@@ -224,7 +224,7 @@ class StatusScreen extends Widget {
   update() { if (Input.take('ok') || Input.take('cancel') || Input.take('menu')) { Snd.sfx('cancel'); this.finish(); } }
   draw() {
     drawWin(16, 10, VW - 32, VH - 20);
-    ctx.drawImage(SPR.ren.down[0], 28, 24, 80, 80);
+    ctx.drawImage(sprFrame('ren', 'idle', 'down', 0), 18, 4, 100, 100);
     text('Kagenuma Ren', 120, 24, { size: 15, bold: true });
     text('Shinobi of Iga · age 19', 120, 44, { size: 10, color: '#c8bc98' });
     text('Level ' + P.lv, 120, 62, { bold: true, color: '#e8d49a' });
@@ -284,13 +284,14 @@ class TrainingScreen extends Widget {
 }
 
 async function techMenu() {
-  let idx = 0;
+  let idx = Math.max(0, P.skills.indexOf(P.active));
   while (true) {
-    const list = P.skills.map(id => ({ id, label: SKILLS[id].name, right: SKILLS[id].ki + ' Ki', desc: SKILLS[id].desc + (SKILLS[id].field ? '' : '  (Battle only)'), disabled: !SKILLS[id].field || P.ki < SKILLS[id].ki }));
-    const i = await menu(list, { x: 140, y: 30, w: 200, rows: 8, title: 'Techniques   Ki ' + P.ki + '/' + maxKi(), desc: true, index: idx });
+    const list = P.skills.map(id => ({ id, label: SKILLS[id].name + (P.active === id ? '  ★' : ''), right: SKILLS[id].ki + ' Ki', desc: SKILLS[id].desc + (id === 'shuriken' ? '' : '  [A] Set as T-button technique'), color: P.active === id ? '#f0d070' : null }));
+    const i = await menu(list, { x: 130, y: 30, w: 220, rows: 8, title: 'Techniques   Ki ' + P.ki + '/' + maxKi(), desc: true, index: idx });
     if (i < 0) return; idx = i;
     const id = list[i].id;
-    if (id === 'breath') { if (P.hp >= maxHP()) { toast('Already at full health.'); continue; } P.ki -= SKILLS[id].ki; const h = Math.round(maxHP() * 0.35); P.hp = Math.min(maxHP(), P.hp + h); Snd.sfx('heal'); toast('Recovered ' + h + ' HP', '#a0e0a0'); }
+    if (id === 'shuriken') { toast('Shuriken always use the S button.'); continue; }
+    P.active = id; toast(SKILLS[id].name + ' set to the T button.');
   }
 }
 function useItemField(id) {
